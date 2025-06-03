@@ -40,23 +40,20 @@
       return;
     }
 
-    // Step 1: Fetch each XML file
+    // Step 1: Fetch and identify part IDs
     const xmlFiles = [];
     for (let url of urls) {
       try {
         const response = await fetch(url);
         const text = await response.text();
 
-        // Step 2: Find the part ID (e.g., P1, P2, ...)
         const match = text.match(/<score-part id="(P\d+)"/);
         if (!match) {
           alert(`Could not find <score-part id="..."> in ${url}`);
           return;
         }
 
-        const partId = match[1]; // e.g., "P1"
-        console.log(`Found part ID ${partId} in ${url}`);
-
+        const partId = match[1];
         xmlFiles.push({ url, text, partId });
       } catch (err) {
         alert(`Failed to fetch ${url}`);
@@ -64,8 +61,57 @@
       }
     }
 
-    // Proceed to Step 3 next: use the part1 base, and merge the others
-    console.log("All files with part IDs:", xmlFiles);
+    // Step 2: Sort files by part number (P1, P2, P3...)
+    xmlFiles.sort((a, b) => {
+      const aNum = parseInt(a.partId.replace("P", ""));
+      const bNum = parseInt(b.partId.replace("P", ""));
+      return aNum - bNum;
+    });
+
+    // Step 3: Use part 1 as base
+    let combinedXml = xmlFiles[0].text;
+
+    // Remove closing tag for appending
+    combinedXml = combinedXml.replace(/<\/score-partwise>\s*$/, "");
+
+    for (let i = 1; i < xmlFiles.length; i++) {
+      const xml = xmlFiles[i].text;
+      const partId = xmlFiles[i].partId;
+
+      // Append the <score-part id="PX">...</score-part>
+      const scorePartMatch = xml.match(new RegExp(`<score-part id="${partId}">[\\s\\S]*?<\\/score-part>`));
+      if (scorePartMatch) {
+        // Insert after last </score-part>
+        const insertIndex = combinedXml.lastIndexOf("</score-part>") + "</score-part>".length;
+        combinedXml =
+          combinedXml.slice(0, insertIndex) +
+          "\n" +
+          scorePartMatch[0] +
+          combinedXml.slice(insertIndex);
+      }
+
+      // Append the <part id="PX">...</part>
+      const partMatch = xml.match(new RegExp(`<part id="${partId}">[\\s\\S]*?<\\/part>`));
+      if (partMatch) {
+        // Insert after last </part>
+        const insertIndex = combinedXml.lastIndexOf("</part>") + "</part>".length;
+        combinedXml =
+          combinedXml.slice(0, insertIndex) +
+          "\n" +
+          partMatch[0] +
+          combinedXml.slice(insertIndex);
+      }
+    }
+
+    // Re-add closing tag
+    combinedXml += "\n</score-partwise>";
+
+    // Step 4: Download the combined XML
+    const blob = new Blob([combinedXml], { type: "application/xml" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "combined_score.xml";
+    link.click();
   });
 </script>
 
