@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Part XML Combiner</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    select, button {
+      padding: 10px;
+      margin: 10px 0;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Combine Selected XML Parts into One Score</h1>
+
+  <label for="xmlSelect">Select XML part files:</label>
+  <select id="xmlSelect" multiple size="6">
+    <option value="https://raw.githubusercontent.com/georgeharrisca/11/main/part1.xml">Part 1</option>
+    <option value="https://raw.githubusercontent.com/georgeharrisca/11/main/part2.xml">Part 2</option>
+    <option value="https://raw.githubusercontent.com/georgeharrisca/11/main/part3.xml">Part 3</option>
+    <!-- Add more as needed -->
+  </select>
+
+  <button id="combineButton">Combine and Download XML</button>
+
+  <script>
+    document.getElementById("combineButton").addEventListener("click", async () => {
+      const selectedOptions = Array.from(document.getElementById("xmlSelect").selectedOptions);
+      const urls = selectedOptions.map(opt => opt.value);
+      if (urls.length === 0) {
+        alert("Please select at least one XML file.");
+        return;
+      }
+
+      console.log("Selected XML URLs:", urls);
+
+      // Step 1: Fetch each file's content
+      const xmlFiles = [];
+      for (let url of urls) {
+        try {
+          const response = await fetch(url);
+          const text = await response.text();
+          xmlFiles.push({ url, text });
+        } catch (err) {
+          alert(`Failed to fetch ${url}`);
+          return;
+        }
+      }
+
+      // Step 2 will go here: parse XML and detect part numbers
+      console.log("Loaded XML files:", xmlFiles);
+    });
+  </script>
+</body>
+</html>
