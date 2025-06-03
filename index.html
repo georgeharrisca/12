@@ -31,33 +31,43 @@
 
   <button id="combineButton">Combine and Download XML</button>
 
-  <script>
-    document.getElementById("combineButton").addEventListener("click", async () => {
-      const selectedOptions = Array.from(document.getElementById("xmlSelect").selectedOptions);
-      const urls = selectedOptions.map(opt => opt.value);
-      if (urls.length === 0) {
-        alert("Please select at least one XML file.");
-        return;
-      }
+<script>
+  document.getElementById("combineButton").addEventListener("click", async () => {
+    const selectedOptions = Array.from(document.getElementById("xmlSelect").selectedOptions);
+    const urls = selectedOptions.map(opt => opt.value);
+    if (urls.length === 0) {
+      alert("Please select at least one XML file.");
+      return;
+    }
 
-      console.log("Selected XML URLs:", urls);
+    // Step 1: Fetch each XML file
+    const xmlFiles = [];
+    for (let url of urls) {
+      try {
+        const response = await fetch(url);
+        const text = await response.text();
 
-      // Step 1: Fetch each file's content
-      const xmlFiles = [];
-      for (let url of urls) {
-        try {
-          const response = await fetch(url);
-          const text = await response.text();
-          xmlFiles.push({ url, text });
-        } catch (err) {
-          alert(`Failed to fetch ${url}`);
+        // Step 2: Find the part ID (e.g., P1, P2, ...)
+        const match = text.match(/<score-part id="(P\d+)"/);
+        if (!match) {
+          alert(`Could not find <score-part id="..."> in ${url}`);
           return;
         }
-      }
 
-      // Step 2 will go here: parse XML and detect part numbers
-      console.log("Loaded XML files:", xmlFiles);
-    });
-  </script>
+        const partId = match[1]; // e.g., "P1"
+        console.log(`Found part ID ${partId} in ${url}`);
+
+        xmlFiles.push({ url, text, partId });
+      } catch (err) {
+        alert(`Failed to fetch ${url}`);
+        return;
+      }
+    }
+
+    // Proceed to Step 3 next: use the part1 base, and merge the others
+    console.log("All files with part IDs:", xmlFiles);
+  });
+</script>
+
 </body>
 </html>
